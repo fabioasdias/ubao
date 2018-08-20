@@ -24,6 +24,6 @@ if __name__ == '__main__':
     model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc1').output)
     model._make_predict_function()
 
-    for im in sorted(glob(sys.argv[1]+'/*.png')):
+    for im in sorted(glob(sys.argv[1]+'/**/t_*.png')):
         print(im)
-        np.savetxt(im.replace('.png','.txt'),_computeFV(im))
+        np.savetxt(im.replace('.png','.fv'),_computeFV(im))
