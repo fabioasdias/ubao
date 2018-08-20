@@ -32,7 +32,11 @@ class plotStuff:
         self.panelName=panelName
         tif = TIFF.open(panelName, mode='r')
         panel = tif.read_image()
-        self.panel=np.uint8(255*(panel/65535.0)) #16-> 8 bits
+        if (np.max(panel>255)):
+            dmax=65535.0
+        else:
+            dmax=255.0
+        self.panel=np.uint8(255*(panel/dmax)) #16-> 8 bits
         self.crops=[]
         self.curCrop=[]
         self.rects=[]
@@ -78,7 +82,8 @@ class plotStuff:
 
         if event.key == 'w':
             outFolder=self.outBaseDir+'/'+basename(self.panelName).replace('.tif','').replace(' ','_')
-            rmtree(outFolder)
+            if (exists(outFolder)):
+                rmtree(outFolder)
             makedirs(outFolder)
             files=[]
             for i,c in enumerate(self.crops):
