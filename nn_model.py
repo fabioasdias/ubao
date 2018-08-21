@@ -29,6 +29,7 @@ from matplotlib.backends import backend_agg
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
+from glob import glob
 
 try:
   import seaborn as sns  
@@ -41,7 +42,7 @@ flags.DEFINE_integer("output_classes",
                       default=62,
                       help="Number of output panels")
 flags.DEFINE_float("learning_rate",
-                   default=0.001,
+                   default=0.0001,
                    help="Initial learning rate.")
 flags.DEFINE_integer("max_steps",
                      default=100000,
@@ -134,6 +135,12 @@ def plot_heldout_prediction(input_vals, probs,
   canvas.print_figure(fname, format="png")
   print("saved {}".format(fname))
 
+def get_model():
+  return(tf.keras.Sequential([
+    # tfp.layers.DenseFlipout(256, activation=tf.nn.relu),
+    tfp.layers.DenseFlipout(FLAGS.output_classes) 
+    ]))
+
 
 def build_input_pipeline(panel_data, batch_size, heldout_size):
   """Build an Iterator switching between train and heldout data."""
@@ -153,6 +160,15 @@ def build_input_pipeline(panel_data, batch_size, heldout_size):
                     repeat().batch(heldout_size))
   heldout_iterator = heldout_frozen.make_one_shot_iterator()
 
+  # Build a iterator over the test set with batch_size=test_size,
+  # i.e., return the entire test set as a constant.
+  test_size=panel_data['yTest'].shape[0]
+  test_dataset = tf.data.Dataset.from_tensor_slices(
+      (np.float32(panel_data['xTest']),np.int32(panel_data['yTest'])))
+  test_frozen = (test_dataset.take(test_size).repeat().batch(test_size))
+  test_iterator = test_frozen.make_one_shot_iterator()
+
+
   # Combine these into a feedable iterator that can switch between training
   # and validation inputs.
   handle = tf.placeholder(tf.string, shape=[])
@@ -160,137 +176,9 @@ def build_input_pipeline(panel_data, batch_size, heldout_size):
       handle, training_batches.output_types, training_batches.output_shapes)
   images, labels = feedable_iterator.get_next()
 
-  return images, labels, handle, training_iterator, heldout_iterator
-
+  return images, labels, handle, training_iterator, heldout_iterator, test_iterator
 
 def read_panels_fv(datafile):
   return(np.load(datafile))
 
 
-def main(argv):
-  del argv  # unused
-
-  xlog=[]
-  tlog=[]
-  vlog=[]
-
-  if tf.gfile.Exists(FLAGS.model_dir):
-    tf.logging.warning(
-        "Warning: deleting old log directory at {}".format(FLAGS.model_dir))
-    tf.gfile.DeleteRecursively(FLAGS.model_dir)
-  tf.gfile.MakeDirs(FLAGS.model_dir)
-
-  panel_data = read_panels_fv(FLAGS.data_file)
-
-  with tf.Graph().as_default():
-    (images, labels, handle,
-     training_iterator, heldout_iterator) = build_input_pipeline(
-         panel_data, FLAGS.batch_size, panel_data['yVal'].shape[0])
-
-    # Build a Bayesian LeNet5 network. We use the Flipout Monte Carlo estimator
-    # for the convolution and fully-connected layers: this enables lower
-    # variance stochastic gradients than naive reparameterization.
-    with tf.name_scope("bayesian_neural_net", values=[images]):
-      neural_net = tf.keras.Sequential([
-          # tfp.layers.DenseFlipout(256, activation=tf.nn.relu),
-          tfp.layers.DenseFlipout(FLAGS.output_classes)
-          ])
-
-      logits = neural_net(images)
-      labels_distribution = tfd.Categorical(logits=logits)
-
-    # Compute the -ELBO as the loss, averaged over the batch size.
-    neg_log_likelihood = -tf.reduce_mean(labels_distribution.log_prob(labels))
-    kl = sum(neural_net.losses) / panel_data['yTrain'].shape[0]
-    elbo_loss = neg_log_likelihood + kl
-
-    # Build metrics for evaluation. Predictions are formed from a single forward
-    # pass of the probabilistic layers. They are cheap but noisy predictions.
-    predictions = tf.argmax(logits, axis=1)
-    accuracy, accuracy_update_op = tf.metrics.accuracy(
-        labels=labels, predictions=predictions)
-
-    # Extract weight posterior statistics for layers with weight distributions
-    # for later visualization.
-    names = []
-    qmeans = []
-    qstds = []
-    for i, layer in enumerate(neural_net.layers):
-      try:
-        q = layer.kernel_posterior
-      except AttributeError:
-        continue
-      names.append("Layer {}".format(i))
-      qmeans.append(q.mean())
-      qstds.append(q.stddev())
-
-    with tf.name_scope("train"):
-      opt = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-
-      train_op = opt.minimize(elbo_loss)
-      sess = tf.Session()
-      sess.run(tf.global_variables_initializer())
-      sess.run(tf.local_variables_initializer())
-
-      # Run the training loop.
-      train_handle = sess.run(training_iterator.string_handle())
-      heldout_handle = sess.run(heldout_iterator.string_handle())
-      for step in range(FLAGS.max_steps):
-        _ = sess.run([train_op, accuracy_update_op],
-                     feed_dict={handle: train_handle})
-
-        if step % 100 == 0:
-          loss_value, accuracy_value = sess.run(
-              [elbo_loss, accuracy], feed_dict={handle: train_handle})
-          print("\nStep: {:>3d} Loss: {:.3f} Accuracy: {:.3f}".format(
-              step, loss_value, accuracy_value))
-          xlog.append(step)
-          tlog.append(loss_value)
-          loss_value, accuracy_value = sess.run(
-              [elbo_loss, accuracy], feed_dict={handle: heldout_handle})
-          print("Step: {:>3d} Loss: {:.3f} Accuracy: {:.3f}".format(
-              step, loss_value, accuracy_value))
-          vlog.append(loss_value)
-        if (step % 1000) == 0:
-          neural_net.save('nn{0}.h5'.format(step))
-
-
-        # if (step+1) % FLAGS.viz_steps == 0:
-        #   # Compute log prob of heldout set by averaging draws from the model:
-        #   # p(heldout | train) = int_model p(heldout|model) p(model|train)
-        #   #                   ~= 1/n * sum_{i=1}^n p(heldout | model_i)
-        #   # where model_i is a draw from the posterior p(model|train).
-        #   probs = np.asarray([sess.run((labels_distribution.probs),
-        #                                feed_dict={handle: heldout_handle})
-        #                       for _ in range(FLAGS.num_monte_carlo)])
-        #   mean_probs = np.mean(probs, axis=0)
-
-        #   image_vals, label_vals = sess.run((images, labels),
-        #                                     feed_dict={handle: heldout_handle})
-        #   heldout_lp = np.mean(np.log(mean_probs[np.arange(mean_probs.shape[0]),
-        #                                          label_vals.flatten()]))
-        #   print(" ... Held-out nats: {:.3f}".format(heldout_lp))
-
-        #   qm_vals, qs_vals = sess.run((qmeans, qstds))
-
-        #   if HAS_SEABORN:
-        #     plot_weight_posteriors(names, qm_vals, qs_vals,
-        #                            fname=os.path.join(
-        #                                FLAGS.model_dir,
-        #                                "step{:05d}_weights.png".format(step)))
-
-        #     # plot_heldout_prediction(image_vals, probs,
-        #     #                         fname=os.path.join(
-        #     #                             FLAGS.model_dir,
-        #     #                             "step{:05d}_pred.png".format(step)),
-        #     #                         title="mean heldout logprob {:.2f}"
-        #     #                         .format(heldout_lp))
-      neural_net.save('final.h5'.format(step))
-      plt.figure()
-      plt.plot(xlog,tlog,'b')
-      plt.plot(xlog,vlog,'r')
-      plt.legend(['Train','Validation'])
-      plt.savefig('curves.png',dpi=300)
-
-if __name__ == "__main__":
-  tf.app.run()
