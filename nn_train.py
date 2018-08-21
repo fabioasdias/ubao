@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 tfd = tfp.distributions
 
 
-TEST_ONLY=True
+TEST_ONLY=False
 
 def main(argv):
   del argv  # unused

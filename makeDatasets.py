@@ -12,8 +12,8 @@ if len(sys.argv)!=2:
 datadir=sys.argv[1]
 
 pTrain=0.6
-pVal=0.2
-pTest=0.2
+pVal=0.35
+pTest=0.05
 
 xTrain=[]
 yTrain=[]
