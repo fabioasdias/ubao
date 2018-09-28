@@ -5,20 +5,18 @@ import matplotlib.pyplot as plt
 tfd = tfp.distributions
 
 
-TEST_ONLY=True
-
 def main(argv):
   del argv  # unused
 
   xlog=[]
   tlog=[]
   vlog=[]
-  if (not TEST_ONLY):
-    if tf.gfile.Exists(FLAGS.model_dir):
-      tf.logging.warning(
-          "Warning: deleting old log directory at {}".format(FLAGS.model_dir))
-      tf.gfile.DeleteRecursively(FLAGS.model_dir)
-    # tf.gfile.MakeDirs(FLAGS.model_dir)
+
+  if tf.gfile.Exists(FLAGS.model_dir):
+    tf.logging.warning(
+        "Warning: deleting old log directory at {}".format(FLAGS.model_dir))
+    tf.gfile.DeleteRecursively(FLAGS.model_dir)
+  # tf.gfile.MakeDirs(FLAGS.model_dir)
 
   panel_data = read_panels_fv(FLAGS.data_file)
 
@@ -61,8 +59,7 @@ def main(argv):
       qstds.append(q.stddev())
 
 
-    if (not TEST_ONLY):
-      with tf.name_scope("train"):
+    with tf.name_scope("train"):
         opt = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
 
         train_op = opt.minimize(elbo_loss)
@@ -106,12 +103,6 @@ def main(argv):
           if  ( step == (FLAGS.max_steps-1)) or ((step % 1000) == 0):            
             neural_net.save_weights(os.path.join(FLAGS.model_dir,'w{0}.h5'.format(step)))
 
-    else:
-      sess = tf.Session()
-      sess.run(tf.global_variables_initializer())
-      sess.run(tf.local_variables_initializer())
-      neural_net.load_weights('model.h5')
-      test_handle = sess.run(test_iterator.string_handle())
 
     loss_value, accuracy_value = sess.run([elbo_loss, accuracy], feed_dict={handle: test_handle})
     print("TEST Loss: {:.3f} Accuracy: {:.3f}".format(loss_value, accuracy_value))

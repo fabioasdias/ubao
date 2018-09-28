@@ -42,13 +42,13 @@ flags.DEFINE_integer("output_classes",
                       default=62,
                       help="Number of output panels")
 flags.DEFINE_float("learning_rate",
-                   default=0.00005,
+                   default=0.00001,
                    help="Initial learning rate.")
 flags.DEFINE_integer("max_steps",
-                     default=100000,
+                     default=50000,
                      help="Number of training steps to run.")
 flags.DEFINE_integer("batch_size",
-                     default=1024,
+                     default=2048,
                      help="Batch size.")
 flags.DEFINE_string("data_file",
                     default="./panel_data.npz",
@@ -59,7 +59,7 @@ flags.DEFINE_integer("viz_steps",
                      default=400,
                      help="Frequency at which save visualizations.")
 flags.DEFINE_integer("num_monte_carlo",
-                     default=200,
+                     default=500,
                      help="Network draws to compute predictive probabilities.")
 
 FLAGS = flags.FLAGS
