@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 tfd = tfp.distributions
 
 
-TEST_ONLY=False
+TEST_ONLY=True
 
 def main(argv):
   del argv  # unused
@@ -80,7 +80,7 @@ def main(argv):
           _ = sess.run([train_op, accuracy_update_op],
                       feed_dict={handle: train_handle})
 
-          if step % 500 == 0:
+          if step % 1000 == 0:
             loss_value, accuracy_value = sess.run(
                 [elbo_loss, accuracy], feed_dict={handle: train_handle})
             print("\nStep: {:>3d} Loss: {:.3f} Accuracy: {:.3f}".format(
@@ -92,6 +92,12 @@ def main(argv):
             print("Step: {:>3d} Loss: {:.3f} Accuracy: {:.3f}".format(
                 step, loss_value, accuracy_value))
             vlog.append(loss_value)
+            plt.figure()
+            plt.plot(xlog,tlog,'b')
+            plt.plot(xlog,vlog,'r')
+            plt.legend(['Train','Validation'])
+            plt.savefig('curves.png',dpi=300)
+            plt.close()
           if  ( step == (FLAGS.max_steps-1)):# or ((step % 1000) == 0):
             builder.add_meta_graph_and_variables(sess,
                                        ["trained"],
@@ -100,16 +106,11 @@ def main(argv):
           if  ( step == (FLAGS.max_steps-1)) or ((step % 1000) == 0):            
             neural_net.save_weights(os.path.join(FLAGS.model_dir,'w{0}.h5'.format(step)))
 
-        plt.figure()
-        plt.plot(xlog,tlog,'b')
-        plt.plot(xlog,vlog,'r')
-        plt.legend(['Train','Validation'])
-        plt.savefig('curves.png',dpi=300)
     else:
       sess = tf.Session()
       sess.run(tf.global_variables_initializer())
       sess.run(tf.local_variables_initializer())
-      neural_net.load_weights(os.path.join(FLAGS.model_dir,'w1999.h5'))
+      neural_net.load_weights('model.h5')
       test_handle = sess.run(test_iterator.string_handle())
 
     loss_value, accuracy_value = sess.run([elbo_loss, accuracy], feed_dict={handle: test_handle})

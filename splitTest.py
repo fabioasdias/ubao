@@ -11,7 +11,7 @@ if len(sys.argv)!=3:
 O=sys.argv[1]
 D=sys.argv[2]
 
-for f in glob(join(O,'**/t_im4*')): #im1 and im4
+for f in glob(join(O,'**/t_im4_*')): #im1 and im4
     panel=basename(split(f)[0])
     cd=join(D,panel)
     if (not exists(cd)):

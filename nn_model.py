@@ -42,7 +42,7 @@ flags.DEFINE_integer("output_classes",
                       default=62,
                       help="Number of output panels")
 flags.DEFINE_float("learning_rate",
-                   default=0.0001,
+                   default=0.00005,
                    help="Initial learning rate.")
 flags.DEFINE_integer("max_steps",
                      default=100000,
@@ -137,7 +137,7 @@ def plot_heldout_prediction(input_vals, probs,
 
 def get_model():
   return(tf.keras.Sequential([
-    # tfp.layers.DenseFlipout(256, activation=tf.nn.relu),
+    # tfp.layers.DenseFlipout(128, activation=tf.nn.relu),
     tfp.layers.DenseFlipout(FLAGS.output_classes) 
     ]))
 
