@@ -15,7 +15,11 @@ if __name__ == '__main__':
     Y=[]
 
     panels=glob(join(sys.argv[1]+'*'))
-    p2i={basename(p):i for i,p in enumerate(panels)}
+    with open('./wtrain/classes.txt','r') as fcl:
+        classNames=[x.strip() for x in fcl.read().split('\n')]
+        classNames=[x for x in classNames if x !='']
+
+    p2i={p:i for i,p in enumerate(classNames)}
     i2p={p2i[p] for p in p2i.keys()}
     for p in panels:
         for f in glob(join(p,'*.fv')):

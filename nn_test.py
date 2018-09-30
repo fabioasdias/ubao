@@ -46,10 +46,14 @@ def main(argv):
                     X = np.expand_dims(X, axis=0)
                     prediction = sess.run([predictions,], feed_dict={FV: X})[0]
                     guess=classNames[prediction[0]]
+                    
                     if (basename(p)==guess):
+                        # print('+',guess,p,f)
                         right+=1
-                    total+=1
-        print('{0:2.2f}'.format(100*(right/total)))
+                    # else:
+                    #     print('-',guess,p,f)
+                    total+=1.0
+        print('{0:2.2f} ({1} / {2})'.format(100*(right/total),right,total))
 
 
 

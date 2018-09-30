@@ -137,7 +137,7 @@ def plot_heldout_prediction(input_vals, probs,
 
 def get_model():
   return(tf.keras.Sequential([
-    tfp.layers.DenseFlipout(1024),#, activation=tf.nn.relu),
+    # tfp.layers.DenseFlipout(1024),#, activation=tf.nn.relu),
     tfp.layers.DenseFlipout(FLAGS.output_classes) 
     ]))
 
