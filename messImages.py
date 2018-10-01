@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 import matplotlib.pylab as plt
 from skimage.transform import warp, AffineTransform
-
+from skimage.exposure import equalize_adapthist
 
 if len(sys.argv)!=2:
     print('.py folder')
@@ -24,21 +24,23 @@ def _warps(im):
     return(ret)
 
 
-s1 = AffineTransform(shear=-0.1)
-s2 = AffineTransform(shear=0.1)
+s1 = AffineTransform(shear=-0.12)
+s2 = AffineTransform(shear=0.12)
 
 
 for f in glob(sys.argv[1]+'/**/im*.png'):
-    im = np.array(Image.open(f))
+    print(f)
+    im = (255*equalize_adapthist(np.array(Image.open(f)))).astype(np.uint8)
+
     base=[]
-    base.append(im[0:int(im.shape[0]*0.8),
-                   0:int(im.shape[1]*0.8)])
-    base.append(im[int(im.shape[0]*0.2):,
-                   int(im.shape[1]*0.2):])
-    base.append(im[0:int(im.shape[0]*0.8),
-                   int(im.shape[1]*0.2):])
-    base.append(im[int(im.shape[0]*0.2):,
-                   0:int(im.shape[1]*0.8)])
+    base.append(im[0:int(im.shape[0]*0.75),
+                   0:int(im.shape[1]*0.75)])
+    base.append(im[int(im.shape[0]*0.25):,
+                   int(im.shape[1]*0.25):])
+    base.append(im[0:int(im.shape[0]*0.75),
+                   int(im.shape[1]*0.25):])
+    base.append(im[int(im.shape[0]*0.25):,
+                   0:int(im.shape[1]*0.75)])
 
     to_use=[]
     for b in base:
@@ -48,6 +50,8 @@ for f in glob(sys.argv[1]+'/**/im*.png'):
     for i,img in enumerate(to_use):
         if (len(img.shape)==2):
             rgbImage=np.stack((img,img,img),axis=2).astype(np.uint8)
+        else:
+            rgbImage=img
 
         pilImg=Image.fromarray(rgbImage)
         pilImg.save(f.replace('im','t_im').replace('.png','_{0}.png'.format(i)))
