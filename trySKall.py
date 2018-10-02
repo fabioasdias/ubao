@@ -13,10 +13,12 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.externals import joblib
+from random import sample
+
 
 if __name__ == '__main__':
-    if len(sys.argv)!=3:
-        print('.py train/ test/')
+    if len(sys.argv)!=2:
+        print('.py data/')
         exit(-1)
     
 
@@ -24,7 +26,7 @@ if __name__ == '__main__':
         KNeighborsClassifier(3),
         SVC(kernel="linear", C=0.025),
         SVC(gamma=2, C=1),
-        GaussianProcessClassifier(1.0 * RBF(1.0)),
+#        GaussianProcessClassifier(1.0 * RBF(1.0)),
         DecisionTreeClassifier(max_depth=5),
         RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
         MLPClassifier(alpha=1),
@@ -32,46 +34,44 @@ if __name__ == '__main__':
         GaussianNB(),
         QuadraticDiscriminantAnalysis()]
 
-    names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
+    names = ["Nearest Neighbors", "Linear SVM", "RBF SVM",# "Gaussian Process",
             "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
             "Naive Bayes", "QDA"]
 
-    X=[]
-    Y=[]
+    XTrain=[]
+    YTrain=[]
+    XTest=[]
+    YTest=[]
 
-    panels=glob(join(sys.argv[1]+'*'))
-    with open('./wtrain/classes.txt','r') as fcl:
-        classNames=[x.strip() for x in fcl.read().split('\n')]
-        classNames=[x for x in classNames if x !='']
-
-    p2i={p:i for i,p in enumerate(classNames)}
+    panels=sorted(glob(join(sys.argv[1]+'*')))
+    p2i={p:i for i,p in enumerate([basename(x) for x in panels])}
     i2p={p2i[p] for p in p2i.keys()}
     for p in panels:
-        for f in glob(join(p,'*.fv')):
-            X.append(np.loadtxt(f))
-            Y.append(p2i[basename(p)])
+        cf=glob(join(p,'t_*.fv'))
+        b=[basename(x) for x in cf]
+        prefs=list(set([x[x.find('_'):x.rfind('_')+1] for x in b]))
+        testnames=sample(prefs,int(np.ceil(0.2*len(prefs))))
+        for f in cf:
+            if any([(x in f) for x in testnames]):
+                XTest.append(np.loadtxt(f))
+                YTest.append(p2i[basename(p)])
+            else:
+                XTrain.append(np.loadtxt(f))
+                YTrain.append(p2i[basename(p)])
 
-    X=np.array(X)
-    Y=np.array(Y)
+    XTest=np.array(XTest)
+    YTest=np.array(YTest)
+    XTrain=np.array(XTrain)
+    YTrain=np.array(YTrain)
 
-    XT=[]
-    YT=[]
-    panelsTest=glob(join(sys.argv[2]+'*'))
-    for p in panelsTest:
-        for f in glob(join(p,'t_*.fv')):
-            XT.append(np.loadtxt(f))
-            YT.append(p2i[basename(p)])
-
-    XT=np.array(XT)
-    YT=np.array(YT)
-
+    np.savez('train.npz', XTest=XTest, YTest=YTest, XTrain=XTrain, YTrain=YTrain)
 
     for name, clf in zip(names, classifiers):    
-        clf.fit(X, Y)  
+        clf.fit(XTrain, YTrain)  
         # joblib.dump(clf, '_'+name)         
         print(name)
-        YY=clf.predict(X)
-        print('Train ',sum(YY==Y)/len(Y))
-        YP=clf.predict(XT)
-        print('TEST', sum(YP==YT)/len(YP))
+        YPTrain=clf.predict(XTrain)
+        print('Train ',sum(YTrain==YPTrain)/len(YTrain))
+        YPTest=clf.predict(XTest)
+        print('TEST', sum(YPTest==YTest)/len(YTest))
         print("\n")
