@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from shutil import copyfile
 from os import makedirs
 from os.path import join,basename,exists
+from sklearn.decomposition import PCA
+import json
 
 tfd = tfp.distributions
 
@@ -18,7 +20,7 @@ def main(argv):
         doCopy=True
         toFolder=argv[2]
     else:
-        print('.py originFolder [copy to folder]')
+        print('.py originFolder [copy to folder-not working]')
         exit(-1)
 
     folder=argv[1]
@@ -28,6 +30,11 @@ def main(argv):
         classNames=[x for x in classNames if x !='']
 
     
+    FVs={}
+    fnames={}
+    for c in classNames:
+        FVs[c]=[]
+        fnames[c]=[]
 
     with tf.Graph().as_default():
         FV = tf.keras.Input(shape=[4096,])
@@ -47,14 +54,36 @@ def main(argv):
                 X=np.loadtxt(f)
                 X = np.expand_dims(X, axis=0)
                 prediction = sess.run([predictions,], feed_dict={FV: X})[0]
-                guess=classNames[prediction[0]]
-                print(f,guess)
-                if doCopy:
-                    copyto=join(toFolder,guess)
-                    if (not exists(copyto)):
-                        makedirs(copyto)
-                    imgFile=f.replace('.fv','.jpg')
-                    copyfile(imgFile,join(copyto,basename(imgFile)))
+                c=classNames[prediction[0]]
+                FVs[c].append(X)
+                fnames[c].append(basename(f).replace('.fv','.jpg'))
+                # print(f,guess)
+                # if doCopy:
+                #     copyto=join(toFolder,guess)
+                #     if (not exists(copyto)):
+                #         makedirs(copyto)
+                #     imgFile=f.replace('.fv','.jpg')
+                #     target=join(copyto,basename(imgFile))
+                #     copyfile(imgFile,target)
+                #     copyfile(f,target.replace('.jpg','.fv'))
+
+
+    for c in classNames:
+        X=np.squeeze(np.array(FVs[c]))
+        # print(X.shape)
+        Y=PCA(n_components=2,whiten=True).fit_transform(X)
+        # print(Y.shape,np.min(Y),np.max(Y))
+        ymin=np.min(Y,axis=0)
+        ymax=np.max(Y,axis=0)
+        Y=np.sqrt((Y-ymin)/(ymax-ymin))
+        imglist=[ {'left':Y[i,0], 'top':Y[i,1], 'fname':name} for i,name in enumerate(fnames[c])]        
+        with open(c+'.json','w') as fout:
+            json.dump(imglist,fout)
+        print(c,len(imglist))
+    master=[{'name':c,'fname':c+'.json'} for c in classNames]
+    with open('master.json','w') as fout:
+        json.dump(master,fout)
+
 
 
 if __name__ == "__main__":

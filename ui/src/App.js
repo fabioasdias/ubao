@@ -1,27 +1,36 @@
 import React, { Component } from 'react';
 import './App.css';
 
+function getData(url,action){
+  fetch(url)
+  .then((response) => {
+    if (response.status >= 400) {
+      throw new Error("Bad response from server");
+    }
+    return response.json();
+  })
+  .then((data) => {
+    action(data);
+  });
+
+}
+
 class App extends Component {
   constructor(props){
     super(props);
     this.state={imagelist:[], nextImage:0, z:1};
   }
   componentDidMount() {
-    let url='imglist.json';
-    fetch(url)
-    .then((response) => {
-      if (response.status >= 400) {
-        throw new Error("Bad response from server");
-      }
-      return response.json();
-    })
-    .then((data) => {
-      for (let i=0;i<data.length;i++){
-        data[i].visibility='hidden';
-        data[i].z=1;
-      }
-      this.setState({imagelist:data});
-    });
+    // getData('master.json',(master)=>{
+      // getData(master[0].fname, (data)=>{
+        getData('Panel_78.json', (data)=>{
+        for (let i=0;i<data.length;i++){
+          data[i].visibility='hidden';
+          data[i].z=1;
+        }
+        this.setState({imagelist:data});    
+      });
+    // });
 
     if(!this.timerId){     
       this.timerId = setInterval(()=>{
@@ -36,7 +45,7 @@ class App extends Component {
           temp[n].z=this.state.z+1;
           this.setState({imagelist:temp.slice(),nextImage:(Math.floor(Math.random()*temp.length)),z:(this.state.z+1)});
         }    
-      }, 50);
+      }, 10);
     }
   }
   componentWillUnmount() {
