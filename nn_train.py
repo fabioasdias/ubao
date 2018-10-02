@@ -23,7 +23,7 @@ def main(argv):
   with tf.Graph().as_default():
     (fvs, labels, handle,
      training_iterator, heldout_iterator, test_iterator) = build_input_pipeline(
-         panel_data, FLAGS.batch_size, panel_data['YTest'].shape[0])
+         panel_data, FLAGS.batch_size, panel_data['yVal'].shape[0])
 
     # Build a Bayesian LeNet5 network. We use the Flipout Monte Carlo estimator
     # for the convolution and fully-connected layers: this enables lower
@@ -35,7 +35,7 @@ def main(argv):
 
     # Compute the -ELBO as the loss, averaged over the batch size.
     neg_log_likelihood = -tf.reduce_mean(labels_distribution.log_prob(labels))
-    kl = sum(neural_net.losses) / panel_data['YTest'].shape[0]
+    kl = sum(neural_net.losses) / panel_data['yTest'].shape[0]
     elbo_loss = neg_log_likelihood + kl
 
     # Build metrics for evaluation. Predictions are formed from a single forward
@@ -72,10 +72,6 @@ def main(argv):
         heldout_handle = sess.run(heldout_iterator.string_handle())
         test_handle = sess.run(test_iterator.string_handle())
 
-        builder = tf.saved_model.builder.SavedModelBuilder(FLAGS.model_dir)
-        builder.add_meta_graph_and_variables(sess,
-                            ["trained"],
-                            strip_default_attrs=True)
 
         for step in range(FLAGS.max_steps):
           _ = sess.run([train_op, accuracy_update_op],
@@ -99,7 +95,20 @@ def main(argv):
             plt.legend(['Train','Validation'])
             plt.savefig('curves.png',dpi=300)
             plt.close()
-            builder.save()
+            
+        builder = tf.saved_model.builder.SavedModelBuilder(FLAGS.model_dir)
+        builder.add_meta_graph_and_variables(sess,
+                            ["trained"],
+                            strip_default_attrs=True)
+
+        builder.save()
+          # if  ( step == (FLAGS.max_steps-1)):# or ((step % 1000) == 0):
+          #   builder.add_meta_graph_and_variables(sess,
+          #                              ["trained"],
+          #                              strip_default_attrs=True)
+          #   builder.save()
+          # if  ( step == (FLAGS.max_steps-1)) or ((step % 1000) == 0):            
+          #   neural_net.save_weights(os.path.join(FLAGS.model_dir,'w{0}.h5'.format(step)))
 
 
     loss_value, accuracy_value = sess.run([elbo_loss, accuracy], feed_dict={handle: test_handle})

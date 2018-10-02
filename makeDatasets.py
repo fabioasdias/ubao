@@ -1,6 +1,6 @@
 from glob import glob
 import sys
-from os.path import join
+from os.path import join, basename
 import numpy as np
 from random import shuffle
 
@@ -24,11 +24,15 @@ yVal=[]
 xTest=[]
 yTest=[]
 
-with open(join(datadir,'classes.txt'),'r') as fcl:
-    classNames=[x.strip() for x in fcl.read().split('\n')]
-    classNames=[x for x in classNames if x !='']
+panels=sorted(glob(join(sys.argv[1]+'*')))
+with open('classes.txt','w') as fout:
+    fout.write('\n'.join([basename(x) for x in panels]))
+# exit()
+p2i={p:i for i,p in enumerate([basename(x) for x in panels])}
+i2p={p2i[p] for p in p2i.keys()}
 
-for i,c in enumerate(classNames):
+for c in p2i.keys():
+    i=p2i[c]
     print(c)
     curData=[]
     for fv in glob(join(datadir,c,'t_*.fv')):

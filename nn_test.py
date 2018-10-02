@@ -18,11 +18,16 @@ def main(argv):
 
     folder=argv[1]
 
-    with open('./wtrain/classes.txt','r') as fcl:
+    with open('classes.txt','r') as fcl:
         classNames=[x.strip() for x in fcl.read().split('\n')]
         classNames=[x for x in classNames if x !='']
 
-    
+    right={}
+    total={}
+
+    for c in classNames:
+        right[c]=0
+        total[c]=0
 
     with tf.Graph().as_default():
         FV = tf.keras.Input(shape=[4096,])
@@ -38,23 +43,28 @@ def main(argv):
             sess.run(tf.local_variables_initializer())
             tf.saved_model.loader.load(sess, ["trained"], FLAGS.model_dir)
 
-            right=0
-            total=0
             for p in glob(join(folder,'*')):
                 for f in glob(join(p,'*.fv')):
                     X=np.loadtxt(f)
                     X = np.expand_dims(X, axis=0)
                     prediction = sess.run([predictions,], feed_dict={FV: X})[0]
                     guess=classNames[prediction[0]]
-                    
-                    if (basename(p)==guess):
+                    c=basename(p)
+                    if (c==guess):
                         # print('+',guess,p,f)
-                        right+=1
+                        right[c]+=1
                     # else:
                     #     print('-',guess,p,f)
-                    total+=1.0
-        print('{0:2.2f} ({1} / {2})'.format(100*(right/total),right,total))
+                    total[c]+=1.0
 
+    TR=0
+    TT=0
+    for c in sorted(total.keys()):
+        TR+=right[c]
+        TT+=total[c]
+        print('{3} - {0:2.2f} ({1} / {2})'.format(100*(right[c]/total[c]),right[c],total[c],c))
+
+    print('\n TOTAL {0:2.2f} ({1} / {2})'.format(100*(TR/TT),TR,TT))
 
 
 if __name__ == "__main__":

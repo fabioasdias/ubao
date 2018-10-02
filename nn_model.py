@@ -42,16 +42,16 @@ flags.DEFINE_integer("output_classes",
                       default=62,
                       help="Number of output panels")
 flags.DEFINE_float("learning_rate",
-                   default=0.0005,
+                   default=0.0025,
                    help="Initial learning rate.")
 flags.DEFINE_integer("max_steps",
-                     default=20000,
+                     default=5000,
                      help="Number of training steps to run.")
 flags.DEFINE_integer("batch_size",
                      default=2048,
                      help="Batch size.")
 flags.DEFINE_string("data_file",
-                    default="./train.npz",
+                    default="./panel_data.npz",
                     help="Prepared file where data is stored (makeDatasets.py).")
 flags.DEFINE_string("model_dir",default="./model",
                     help="Directory to put the model's fit.")
@@ -147,7 +147,7 @@ def build_input_pipeline(panel_data, batch_size, heldout_size):
 
   # Build an iterator over training batches.
   training_dataset = tf.data.Dataset.from_tensor_slices(
-      (np.float32(panel_data['XTrain']), np.int32(panel_data['YTrain'])))
+      (np.float32(panel_data['xTrain']), np.int32(panel_data['yTrain'])))
   training_batches = training_dataset.shuffle(
       50000, reshuffle_each_iteration=True).repeat().batch(batch_size)
   training_iterator = training_batches.make_one_shot_iterator()
@@ -155,16 +155,16 @@ def build_input_pipeline(panel_data, batch_size, heldout_size):
   # Build a iterator over the heldout set with batch_size=heldout_size,
   # i.e., return the entire heldout set as a constant.
   heldout_dataset = tf.data.Dataset.from_tensor_slices(
-      (np.float32(panel_data['YTest']),np.int32(panel_data['YTest'])))
+      (np.float32(panel_data['xVal']),np.int32(panel_data['yVal'])))
   heldout_frozen = (heldout_dataset.take(heldout_size).
                     repeat().batch(heldout_size))
   heldout_iterator = heldout_frozen.make_one_shot_iterator()
 
   # Build a iterator over the test set with batch_size=test_size,
   # i.e., return the entire test set as a constant.
-  test_size=panel_data['XTest'].shape[0]
+  test_size=panel_data['yTest'].shape[0]
   test_dataset = tf.data.Dataset.from_tensor_slices(
-      (np.float32(panel_data['XTest']),np.int32(panel_data['YTest'])))
+      (np.float32(panel_data['xTest']),np.int32(panel_data['yTest'])))
   test_frozen = (test_dataset.take(test_size).repeat().batch(test_size))
   test_iterator = test_frozen.make_one_shot_iterator()
 

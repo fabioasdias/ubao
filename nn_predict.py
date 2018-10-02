@@ -23,16 +23,13 @@ def main(argv):
 
     folder=argv[1]
 
-    with open('./wtrain/classes.txt','r') as fcl:
+    with open('classes.txt','r') as fcl:
         classNames=[x.strip() for x in fcl.read().split('\n')]
         classNames=[x for x in classNames if x !='']
 
     
 
     with tf.Graph().as_default():
-    # Build a Bayesian LeNet5 network. We use the Flipout Monte Carlo estimator
-    # for the convolution and fully-connected layers: this enables lower
-    # variance stochastic gradients than naive reparameterization.
         FV = tf.keras.Input(shape=[4096,])
         with tf.name_scope("bayesian_neural_net", values=[FV]):
             neural_net=get_model()
