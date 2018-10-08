@@ -14,21 +14,33 @@ function getData(url,action){
   });
 
 }
+let HN=8;
+let VN=5;// number of H and V slots
+let MaxH=950;
+let MaxW=1700;
+
+function strSlot(ls,ts){
+  let ret='('+String(ls)+','+String(ts)+')';
+  //console.log(ls,ts,ret);
+  return(ret);
+}
 
 class App extends Component {
   constructor(props){
     super(props);
-    this.state={imagelist:[], nextImage:0, z:1};
+    this.state={imagelist:[], nextImage:0, z:1, lastUsed:{}};
   }
   componentDidMount() {
     // getData('master.json',(master)=>{
       // getData(master[0].fname, (data)=>{
         getData('Panel_78.json', (data)=>{
-        for (let i=0;i<data.length;i++){
-          data[i].visibility='hidden';
-          data[i].z=1;
-        }
-        this.setState({imagelist:data});    
+          for (let i=0;i<data.length;i++){
+            data[i].visibility='hidden';
+            data[i].z=1;
+            data[i].left_slot=Math.floor(HN*data[i].left);
+            data[i].top_slot=Math.floor(VN*data[i].top);
+          }
+          this.setState({imagelist:data});    
       });
     // });
 
@@ -38,12 +50,17 @@ class App extends Component {
         {
           let temp=this.state.imagelist.slice();
           let n=this.state.nextImage;
-          // if (n>=temp.length){
-          //   n=0;
-          // }
+          let nextSlot=strSlot(temp[n].left_slot,temp[n].top_slot);
+          if (this.state.lastUsed.hasOwnProperty(nextSlot)){
+            temp[this.state.lastUsed[nextSlot]].visibility='hidden';
+          }
+          let last={...this.state.lastUsed};
+          last[nextSlot]=n;
           temp[n].visibility='visible';
           temp[n].z=this.state.z+1;
+          // console.log(n,nextSlot)
           this.setState({imagelist:temp.slice(),
+                          lastUsed:last,
                           nextImage:(Math.floor(Math.random()*temp.length)),
                           z:(this.state.z+1)});
         }    
@@ -61,9 +78,13 @@ class App extends Component {
             return(<img 
                       className="image" 
                       key={d.fname} 
-                      style={{left:1400*( Math.ceil(6*d.left)/6.0),
-                              top:1000*(Math.floor(3*d.top)/3.0), 
+                      style={{left:MaxW*(d.left_slot/HN),
+                              top:MaxH*(d.top_slot/VN), 
                               visibility:d.visibility, 
+                              width:'auto',
+                              height:'auto',
+                              maxHeight:'175px', 
+                              maxWidth:'175px', 
                               zIndex:d.z}} 
                       src={'./img/'+d.fname} 
                       alt={d.fname} 

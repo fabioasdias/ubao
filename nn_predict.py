@@ -5,10 +5,13 @@ import matplotlib.pyplot as plt
 from shutil import copyfile
 from os import makedirs
 from os.path import join,basename,exists
-from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+# from sklearn.decomposition import PCA
+from sklearn.manifold import LocallyLinearEmbedding, MDS
 import json
 
 tfd = tfp.distributions
+scaler = StandardScaler(copy=True, with_mean=True, with_std=True)
 
 # FLAGS=tf.flags
 
@@ -71,11 +74,20 @@ def main(argv):
     for c in classNames:
         X=np.squeeze(np.array(FVs[c]))
         # print(X.shape)
-        Y=PCA(n_components=2,whiten=True).fit_transform(X)
+        # Y=PCA(n_components=2,whiten=True).fit_transform(X)
+        # Y = LocallyLinearEmbedding(5, 2, eigen_solver='auto',method='ltsa').fit_transform(X)
+        Y = MDS(n_components=2, metric=False).fit_transform(X)
         # print(Y.shape,np.min(Y),np.max(Y))
+        Y=scaler.fit_transform(Y)
         ymin=np.min(Y,axis=0)
-        ymax=np.max(Y,axis=0)
-        Y=np.sqrt((Y-ymin)/(ymax-ymin))
+        ymax=np.max(Y,axis=0)        
+        Y=(Y-ymin)/(ymax-ymin)
+
+        plt.figure()
+        plt.plot(Y[:,0],Y[:,1],'.')
+        plt.title(c)
+        plt.savefig(c+'.png')
+        plt.close()
         imglist=[ {'left':Y[i,0], 'top':Y[i,1], 'fname':name} for i,name in enumerate(fnames[c])]        
         with open(c+'.json','w') as fout:
             json.dump(imglist,fout)
@@ -83,7 +95,6 @@ def main(argv):
     master=[{'name':c,'fname':c+'.json'} for c in classNames]
     with open('master.json','w') as fout:
         json.dump(master,fout)
-
 
 
 if __name__ == "__main__":
