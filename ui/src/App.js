@@ -43,7 +43,9 @@ class App extends Component {
           // }
           temp[n].visibility='visible';
           temp[n].z=this.state.z+1;
-          this.setState({imagelist:temp.slice(),nextImage:(Math.floor(Math.random()*temp.length)),z:(this.state.z+1)});
+          this.setState({imagelist:temp.slice(),
+                          nextImage:(Math.floor(Math.random()*temp.length)),
+                          z:(this.state.z+1)});
         }    
       }, 10);
     }
@@ -56,7 +58,16 @@ class App extends Component {
       return (
         <div>
           {this.state.imagelist.map((d) => {
-            return(<img className="image" key={d.fname} style={{left:1600*(d.left),top:800*(d.top), visibility:d.visibility, zIndex:d.z}} src={'./img/'+d.fname} alt={d.fname} />)
+            return(<img 
+                      className="image" 
+                      key={d.fname} 
+                      style={{left:1400*( Math.ceil(6*d.left)/6.0),
+                              top:1000*(Math.floor(3*d.top)/3.0), 
+                              visibility:d.visibility, 
+                              zIndex:d.z}} 
+                      src={'./img/'+d.fname} 
+                      alt={d.fname} 
+                      />)
           })}
         </div>)
       }
