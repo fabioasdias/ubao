@@ -5,6 +5,9 @@ from keras.models import Model
 from glob import glob
 import sys
 import numpy as np
+from tqdm import tqdm
+from os.path import exists
+#from random import shuffle
 
 def _computeFV(img_path):
     global model
@@ -12,7 +15,7 @@ def _computeFV(img_path):
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
-    return(model.predict(x).squeeze())
+    np.savetxt( img_path.replace(ext,'.fv'), model.predict(x).squeeze() )
 
 
 if __name__ == '__main__':
@@ -32,7 +35,7 @@ if __name__ == '__main__':
         to_do=glob(sys.argv[1]+'/*.jpg')
         ext='.jpg'
 
-
-    for im in to_do:
-        print(im)
-        np.savetxt(im.replace(ext,'.fv'),_computeFV(im))
+    #shuffle(to_do)
+    for im in tqdm(to_do):
+        if not exists(im.replace(ext,'.fv')):
+            _computeFV(im)
