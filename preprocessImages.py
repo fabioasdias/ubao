@@ -1,7 +1,19 @@
-from glob import glob
+import sys
 from subprocess import call
+from os.path import exists
+from tqdm import tqdm
+from multiprocessing import Pool
 
-fileList=glob('*.jpeg')
+def _doThings(inName):
+   outName='out_{0}'.format(inName)
+   if not exists(outName):
+      call('convert "{0}" -resize 400 {1}'.format(inName,outName),shell=True)
 
-for i,f in enumerate(fileList):
-    call('convert "{0}" -resize 400 out_{1}.jpg'.format(f,i),shell=True)
+
+with open(sys.argv[1],'r') as fin:
+   todo=fin.read().split('\n')
+   p=Pool()
+   p.map(_doThings,todo)
+   p.close()
+
+         
