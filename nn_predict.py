@@ -1,97 +1,118 @@
 import tensorflow as tf
 from nn_model import *
 import tensorflow_probability as tfp
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from shutil import copyfile
 from os import makedirs
 from os.path import join,basename,exists
 from sklearn.preprocessing import StandardScaler
-# from sklearn.decomposition import PCA
-from sklearn.manifold import LocallyLinearEmbedding, MDS
+from sklearn.decomposition import PCA
+# from sklearn.manifold import MDS
 import json
+from tqdm import tqdm
+import pickle
 
 tfd = tfp.distributions
 scaler = StandardScaler(copy=True, with_mean=True, with_std=True)
 
+cachefile='cache.gp'
+
 # FLAGS=tf.flags
+
+# def saveStuff(FVs,fnames):
+#     print('saving')
+#     for c in fnames:
+#         print(c)
+#         f=c+'_'+cachefile
+
+#         X=np.array(np.squeeze(FVs[c]))
+#         np.savez_compressed(f.replace('.gp','.npz'),FVs=X)
+
+#         with open(f,'wb') as fgp:
+#             pickle.dump({'fnames':fnames[c]},fgp)
+#     with open(cachefile,'wb') as fgp:
+#         pickle.dump({'classNames':list(fnames.keys())})
+
+# def readStuff(c):
+#     f=c+'_'+cachefile
+#     with open(f,'rb') as fgp:
+#         fnames=pickle.load(fgp)['fnames']
+#     FVs=np.load(f.replace('.gp','.npz'))['FVs']
+#     return({'FVs':FVs,'fnames':fnames})
 
 def main(argv):
 
-    if len(argv)==2:
-        doCopy=False
-    elif len(argv)==3:
-        doCopy=True
-        toFolder=argv[2]
-    else:
-        print('.py originFolder [copy to folder-not working]')
+    if len(argv)!=2:
+        print('.py filelist.txt')
         exit(-1)
 
-    folder=argv[1]
+    fileList=argv[1]
 
-    with open('classes.txt','r') as fcl:
+    with open('../classes.txt','r') as fcl:
         classNames=[x.strip() for x in fcl.read().split('\n')]
         classNames=[x for x in classNames if x !='']
 
-    
-    FVs={}
-    fnames={}
-    for c in classNames:
-        FVs[c]=[]
-        fnames[c]=[]
+    NBATCH=1000
 
-    with tf.Graph().as_default():
-        FV = tf.keras.Input(shape=[4096,])
-        with tf.name_scope("bayesian_neural_net", values=[FV]):
-            neural_net=get_model()
-            logits = neural_net(FV)
-            predictions = tf.argmax(logits, axis=1)
+    if not exists(cachefile):
+        # FVs={}
+        fnames={}
+        for c in classNames:
+            # FVs[c]=[]
+            fnames[c]=[]
 
-
-        with tf.name_scope("predict"):
-            sess = tf.Session()                   
-            sess.run(tf.global_variables_initializer())
-            sess.run(tf.local_variables_initializer())
-            tf.saved_model.loader.load(sess, ["trained"], FLAGS.model_dir)
-
-            for f in glob(os.path.join(folder,'*.fv')):
-                X=np.loadtxt(f)
-                X = np.expand_dims(X, axis=0)
-                prediction = sess.run([predictions,], feed_dict={FV: X})[0]
-                c=classNames[prediction[0]]
-                FVs[c].append(X)
-                fnames[c].append(basename(f).replace('.fv','.jpg'))
-                # print(f,guess)
-                # if doCopy:
-                #     copyto=join(toFolder,guess)
-                #     if (not exists(copyto)):
-                #         makedirs(copyto)
-                #     imgFile=f.replace('.fv','.jpg')
-                #     target=join(copyto,basename(imgFile))
-                #     copyfile(imgFile,target)
-                #     copyfile(f,target.replace('.jpg','.fv'))
+        with tf.Graph().as_default():
+            FV = tf.keras.Input(shape=[4096,])
+            with tf.name_scope("bayesian_neural_net", values=[FV]):
+                neural_net=get_model()
+                logits = neural_net(FV)
+                predictions = tf.argmax(logits, axis=1)
 
 
-    for c in classNames:
-        X=np.squeeze(np.array(FVs[c]))
+            with tf.name_scope("predict"):
+                sess = tf.Session()                   
+                sess.run(tf.global_variables_initializer())
+                sess.run(tf.local_variables_initializer())
+                tf.saved_model.loader.load(sess, ["trained"], FLAGS.model_dir)
+
+                with open(fileList) as flist:
+                    todo=[x.strip().replace('.jpg','.fv') for x in flist.read().split('\n') if x!='']
+                todo=[todo[x:x+NBATCH] for x in range(0, len(todo), NBATCH)]                        
+                for lf in tqdm(todo):
+                    X=[]
+                    for f in lf:
+                        X.append(np.loadtxt(f))
+                    X=np.array(X)
+                    prediction = sess.run([predictions,], feed_dict={FV: X})[0]
+                    for i in range(NBATCH):
+                        c=classNames[prediction[i]]
+                        fnames[c].append(basename(lf[i]).replace('.fv','.jpg'))
+        # saveStuff(FVs,fnames)
+        # del(FVs)           
+        # del(fnames)
+        
+        
+    for c in tqdm(classNames):
+        # data=readStuff(c)
+        # X=np.squeeze(np.array(data['FVs']))
+        # del(FVs[c])
         # print(X.shape)
-        # Y=PCA(n_components=2,whiten=True).fit_transform(X)
-        # Y = LocallyLinearEmbedding(5, 2, eigen_solver='auto',method='ltsa').fit_transform(X)
-        Y = MDS(n_components=2, metric=False).fit_transform(X)
-        # print(Y.shape,np.min(Y),np.max(Y))
-        Y=scaler.fit_transform(Y)
-        ymin=np.min(Y,axis=0)
-        ymax=np.max(Y,axis=0)        
-        Y=(Y-ymin)/(ymax-ymin)
+        # M=MDS(n_components=2, metric=False).fit(X[:500,:])
+        # Y = M.transform(X)
+        # Y = PCA(n_components=2).fit_transform(X)
+        # Y=scaler.fit_transform(Y)
+        # ymin=np.min(Y,axis=0)
+        # ymax=np.max(Y,axis=0)        
+        # Y=(Y-ymin)/(ymax-ymin)
 
-        plt.figure()
-        plt.plot(Y[:,0],Y[:,1],'.')
-        plt.title(c)
-        plt.savefig(c+'.png')
-        plt.close()
-        imglist=[ {'left':Y[i,0], 'top':Y[i,1], 'fname':name} for i,name in enumerate(fnames[c])]        
-        with open(c+'.json','w') as fout:
-            json.dump(imglist,fout)
-        print(c,len(imglist))
+        with open(c+'.txt','w') as fout:
+            fout.write('\n'.join(fnames[c]))
+
+        # imglist=[ {'left':Y[i,0], 'top':Y[i,1], 'fname':name} for i,name in enumerate(data['fnames'])]        
+        # with open(c+'.json','w') as fout:
+            # json.dump(imglist,fout)
+        # print(c,len(imglist))
+
     master=[{'name':c,'fname':c+'.json'} for c in classNames]
     with open('master.json','w') as fout:
         json.dump(master,fout)

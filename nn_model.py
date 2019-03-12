@@ -21,11 +21,11 @@ import warnings
 
 # Dependency imports
 from absl import flags
-import matplotlib
-matplotlib.use("Agg")
-from matplotlib import figure  
-import matplotlib.pylab as plt
-from matplotlib.backends import backend_agg
+# import matplotlib
+# matplotlib.use("Agg")
+# from matplotlib import figure  
+# import matplotlib.pylab as plt
+# from matplotlib.backends import backend_agg
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
@@ -53,7 +53,7 @@ flags.DEFINE_integer("batch_size",
 flags.DEFINE_string("data_file",
                     default="./panel_data.npz",
                     help="Prepared file where data is stored (makeDatasets.py).")
-flags.DEFINE_string("model_dir",default="./model",
+flags.DEFINE_string("model_dir",default="../model",
                     help="Directory to put the model's fit.")
 flags.DEFINE_integer("viz_steps",
                      default=400,
