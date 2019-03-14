@@ -52,7 +52,7 @@ def main(argv):
         classNames=[x.strip() for x in fcl.read().split('\n')]
         classNames=[x for x in classNames if x !='']
 
-    NBATCH=1000
+    NBATCH=177
 
     if not exists(cachefile):
         # FVs={}
@@ -84,7 +84,7 @@ def main(argv):
                         X.append(np.loadtxt(f))
                     X=np.array(X)
                     prediction = sess.run([predictions,], feed_dict={FV: X})[0]
-                    for i in range(NBATCH):
+                    for i in range(len(prediction)):
                         c=classNames[prediction[i]]
                         fnames[c].append(basename(lf[i]).replace('.fv','.jpg'))
         # saveStuff(FVs,fnames)
