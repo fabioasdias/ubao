@@ -69,11 +69,7 @@ for panel in panels:
             newImages=[]
             while len(newImages)<cN:
                 minUsed=np.min(uses)
-                leastUsed=np.where(uses==minUsed)
-                try:
-                    possibles=list(np.squeeze(leastUsed))
-                except:
-                    print(cN,leastUsed)
+                possibles=list(np.atleast_1d(np.squeeze(np.where(uses==minUsed))))
 
                 if (len(newImages)+len(possibles))>cN:
                     possibles=choice(possibles,size=(cN-len(newImages),))
