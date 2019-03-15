@@ -60,9 +60,11 @@ for panel in panels:
         continue
 
     with open(panel) as fin:
-        imagelist=[x.strip() for x in fin.read().split('\n') if x.strip()!='']
+        imagelist=[x.strip() for x in fin.read().split('\n')]
+        imagelist=[x for x in imagelist if (x!='') and exists(join('./img/',x))]
 
     N=len(imagelist)
+    print(N)
 
     n_to_add=min([N/(numFrames-1),total/2])
     print('adding {0} per frame'.format(n_to_add))
