@@ -55,7 +55,7 @@ for panel in panels:
     n_to_add=min([N/(numFrames-1),total/2])
     print('adding {0} per frame'.format(n_to_add))
 
-    uses=np.zeros((N,))
+    uses=np.zeros((N,),dtype=np.int)
 
     to_use=-np.ones((numFrames,total),dtype=np.int)
     cummulative=0
@@ -69,9 +69,13 @@ for panel in panels:
             newImages=[]
             while len(newImages)<cN:
                 minUsed=np.min(uses)
-                possibles=list(np.squeeze(np.where(uses==minUsed)))
+                leastUsed=np.where(uses==minUsed)
+                try:
+                    possibles=list(np.squeeze(leastUsed))
+                except:
+                    print(cN,leastUsed)
 
-                if (len(newImages)+len(possibles)>cN):
+                if (len(newImages)+len(possibles))>cN:
                     possibles=choice(possibles,size=(cN-len(newImages),))
                 for img in possibles:
                     uses[img]+=1
