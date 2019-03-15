@@ -39,8 +39,8 @@ for i in range(NumH):
         grid.append([h,w])
 
 
-#30 minutes at 25frames/second
-numFrames=10*60*25
+#30 minutes at 25frames/second 10*6
+numFrames=10*25
 
 panels=glob('Panel*.txt')
 
@@ -104,7 +104,7 @@ for panel in panels:
                 newIm=np.array(Image.open(join('./img/',imagelist[img])).resize((sW,sH),Image.BILINEAR))
                 if (len(newIm.shape)==2):
                     newIm=np.stack([newIm,newIm,newIm],axis=2)            
-                frame[grid[j][0]:grid[j][0]+sH,grid[j][1]:grid[j][1]+sW,:]=newIm        
+                frame[grid[j][0]:grid[j][0]+sH,grid[j][1]:grid[j][1]+sW,:]=newIm[:,:,0:2]#RGBA
         writer.writeFrame(frame)            
     writer.close()
 
