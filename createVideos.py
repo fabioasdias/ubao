@@ -39,8 +39,8 @@ for i in range(NumH):
         grid.append([h,w])
 
 
-#30 minutes at 25frames/second 10*6
-numFrames=10*25
+#10 minutes at 25frames/second 
+numFrames=10*60*25
 
 panels=glob('Panel*.txt')
 
