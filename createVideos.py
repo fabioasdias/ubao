@@ -52,7 +52,7 @@ for panel in panels:
 
     N=len(imagelist)
 
-    n_to_add=N/(numFrames-1)
+    n_to_add=min([N/(numFrames-1),total/2])
     print('adding {0} per frame'.format(n_to_add))
 
     uses=np.zeros((N,))
