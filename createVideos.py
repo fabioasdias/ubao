@@ -5,7 +5,7 @@ from tqdm import tqdm
 from numpy.random import choice,randint
 import numpy as np
 from PIL import Image
-from os.path import join 
+from os.path import join, exists
 
 
 W=1920
@@ -46,6 +46,9 @@ panels=glob('Panel*.txt')
 
 for panel in panels:
     print(panel)
+    vidName=panel.replace('.txt','.mp4')
+    if exists(vidName):
+        continue
 
     with open(panel) as fin:
         imagelist=[x.strip() for x in fin.read().split('\n') if x.strip()!='']
@@ -109,7 +112,7 @@ for panel in panels:
 
 
     print('assembling video')
-    writer = skvideo.io.FFmpegWriter(panel.replace('.txt','.mp4'), 
+    writer = skvideo.io.FFmpegWriter(vidName, 
         outputdict={'-vcodec': 'libx264'})
 
     frame = np.zeros((H, W, 3),dtype=np.uint8)
