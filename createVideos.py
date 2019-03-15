@@ -94,7 +94,8 @@ for panel in panels:
 
 
     print('assembling video')
-    writer = skvideo.io.FFmpegWriter(panel.replace('.txt','.mp4'))
+    writer = skvideo.io.FFmpegWriter(panel.replace('.txt','.mp4'), 
+        outputdict={'-vcodec': 'libx264'})
 
     for i in tqdm(range(numFrames)):
         frame = np.zeros((H, W, 3),dtype=np.uint8)
