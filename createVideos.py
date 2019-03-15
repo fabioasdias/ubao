@@ -104,7 +104,7 @@ for panel in panels:
                 newIm=np.array(Image.open(join('./img/',imagelist[img])).resize((sW,sH),Image.BILINEAR))
                 if (len(newIm.shape)==2):
                     newIm=np.stack([newIm,newIm,newIm],axis=2)            
-                frame[grid[j][0]:grid[j][0]+sH,grid[j][1]:grid[j][1]+sW,:]=newIm[:,:,0:2]#RGBA
+                frame[grid[j][0]:grid[j][0]+sH,grid[j][1]:grid[j][1]+sW,:]=newIm[:,:,0:3]#RGBA
         writer.writeFrame(frame)            
     writer.close()
 
