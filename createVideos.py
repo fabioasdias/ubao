@@ -39,7 +39,7 @@ for i in range(NumH):
         grid.append([h,w])
 
 
-#10 minutes at 25frames/second
+#30 minutes at 25frames/second
 numFrames=10*60*25
 
 panels=glob('Panel*.txt')
@@ -55,7 +55,7 @@ for panel in panels:
     n_to_add=N/(numFrames-1)
     print('adding {0} per frame'.format(n_to_add))
 
-    uses=np.ones((N,))
+    uses=np.zeros((N,))
 
     to_use=-np.ones((numFrames,total),dtype=np.int)
     cummulative=0
@@ -90,20 +90,21 @@ for panel in panels:
     #     print(i,np.squeeze(to_use[i]).astype(np.int))
     #     input('.')
             
-
+    print('least used image was used {0}, most {1}'.format(np.min(uses),np.max(uses)))
 
 
     print('assembling video')
     writer = skvideo.io.FFmpegWriter(panel.replace('.txt','.mp4'), 
         outputdict={'-vcodec': 'libx264'})
 
+    frame = np.zeros((H, W, 3),dtype=np.uint8)
     for i in tqdm(range(numFrames)):
-        frame = np.zeros((H, W, 3),dtype=np.uint8)
         for j,img in enumerate(to_use[i].squeeze()):
-            newIm=np.array(Image.open(join('./img/',imagelist[img])).resize((sW,sH),Image.BILINEAR))
-            if (len(newIm.shape)==2):
-                newIm=np.stack([newIm,newIm,newIm],axis=2)            
-            frame[grid[j][0]:grid[j][0]+sH,grid[j][1]:grid[j][1]+sW,:]=newIm        
+            if (i==0) or (to_use[i,j]!=to_use[i-1,j]):
+                newIm=np.array(Image.open(join('./img/',imagelist[img])).resize((sW,sH),Image.BILINEAR))
+                if (len(newIm.shape)==2):
+                    newIm=np.stack([newIm,newIm,newIm],axis=2)            
+                frame[grid[j][0]:grid[j][0]+sH,grid[j][1]:grid[j][1]+sW,:]=newIm        
         writer.writeFrame(frame)            
     writer.close()
 
