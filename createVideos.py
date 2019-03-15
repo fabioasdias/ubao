@@ -66,7 +66,11 @@ for panel in panels:
             cN=int(np.floor(cummulative))
             cummulative-=cN
 
-            newImages=choice(list(range(N)),size=(cN,),p=_h2p(uses))
+            newImages=list(np.squeeze(np.where(uses==0)))
+            if (newImages):
+                newImages=newImages[:cN]
+            else:
+                newImages=choice(list(range(N)),size=(cN,),p=_h2p(uses))
             for img in newImages:
                 uses[img]+=1
                 ind=choice(list(range(total)),size=(1,),p=_h2p(np.sum(to_use!=-1,axis=0)))
