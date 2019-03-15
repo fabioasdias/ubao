@@ -6,7 +6,7 @@ from numpy.random import choice,randint
 import numpy as np
 from PIL import Image
 from os.path import join 
-import matplotlib.pylab as plt
+
 
 W=1920
 sW=200
