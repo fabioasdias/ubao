@@ -67,11 +67,17 @@ for panel in panels:
             cummulative-=cN
 
             newImages=[]
+            while len(newImages)<cN:
+                minUsed=np.min(uses)
+                possibles=list(np.squeeze(np.where(uses==minUsed)))
 
-            #drawing more than one  might lead to picking the same image twice 
-            for _ in range(cN):
-                newImages.append(choice(list(range(N)),size=(1,),p=_h2p(uses)))
-                uses[newImages[-1]]+=1
+                if (len(newImages)+len(possibles)>cN):
+                    possibles=choice(possibles,size=(cN-len(newImages),))
+                for img in possibles:
+                    uses[img]+=1
+                newImages.extend(possibles)
+
+                
                 
             for img in newImages:
                 ind=choice(list(range(total)),size=(1,),p=_h2p(np.sum(to_use!=-1,axis=0)))
