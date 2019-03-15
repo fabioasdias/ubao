@@ -1,11 +1,17 @@
 import skvideo.io
 import numpy as np
-from glob import glob
 from tqdm import tqdm
 from numpy.random import choice,randint
 import numpy as np
 from PIL import Image
 from os.path import join, exists
+import sys
+
+
+if len(sys.argv)!=2:
+    todoName='todo.txt'
+else:
+    todoName=sys.argv[1]
 
 
 W=1920
@@ -42,7 +48,10 @@ for i in range(NumH):
 #10 minutes at 25frames/second 
 numFrames=10*60*25 #10*60
 
-panels=glob('Panel*.txt')
+with open(todoName,'r') as fin:
+    panels=[x.strip() for x in fin.read().split('\n') if x.strip()!='']
+
+# panels=glob('Panel*.txt')
 
 for panel in panels:
     print(panel)
