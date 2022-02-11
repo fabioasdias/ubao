@@ -4,7 +4,7 @@
   "private": true,
   "homepage": "http://ug.daniels.utoronto.ca/~diasf/ubao/",
   "dependencies": {
-    "ajv": "^6.5.4",
+    "ajv": "^6.12.3",
     "gh-pages": "^1.2.0",
     "isomorphic-fetch": "^2.2.1",
     "react": "^16.5.2",
